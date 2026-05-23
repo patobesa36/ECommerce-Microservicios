@@ -33,7 +33,12 @@ builder.Host.UseSerilog();
 // 2. Controladores y Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
+});
 
 // 3. Manejo Global de Errores (El orden importa)
 builder.Services.AddExceptionHandler<NotFoundExceptionHandler>();
