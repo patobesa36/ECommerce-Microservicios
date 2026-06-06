@@ -1,44 +1,94 @@
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.DependencyInjection;
+using Orders.API.ExceptionHandlers;
+using Orders.API.Middlewares;
+using Orders.API.Services;
+using Serilog;
+using Serilog.Events;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// 1. Configuración de Serilog [cite: 1150, 1151]
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore.Hosting.Diagnostics", LogEventLevel.Information)
+    .Enrich.FromLogContext()
+    .WriteTo.Logger(lc => lc
+        .Filter.ByIncludingOnly(le => le.Level >= LogEventLevel.Error)
+        .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"))
+    .WriteTo.Logger(lc => lc
+        .Filter.ByIncludingOnly(le =>
+        {
+            var isHttp = le.Properties.TryGetValue("RequestPath", out var pathValue);
+            if (isHttp && pathValue?.ToString().Contains("/health") == true) return false;
+            if (isHttp && pathValue?.ToString().Contains("/swagger") == true) return false;
+            return true;
+        })
+        .WriteTo.File("logs/audit.log", rollingInterval: RollingInterval.Day,
+            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} | {RequestMethod} | {RequestPath} | {StatusCode}{NewLine}"))
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
+// 2. Controladores, Swagger e Inyección de Dependencias [cite: 1141]
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
+});
+
+// Inyección de servicios para Orders 
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IOrderService, OrderService>();
+
+// 3. Manejo Global de Errores (Orden estricto de específico a genérico) [cite: 1145, 1180]
+builder.Services.AddExceptionHandler<BadRequestExceptionHandler>();
+builder.Services.AddExceptionHandler<UnprocessableEntityExceptionHandler>();
+builder.Services.AddExceptionHandler<BusinessRuleExceptionHandler>();
+builder.Services.AddExceptionHandler<NotFoundExceptionHandler>();
+builder.Services.AddProblemDetails();
+
+// 4. Health Checks 
+builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecksUI(setup =>
+{
+    setup.SetEvaluationTimeInSeconds(600);
+    setup.AddHealthCheckEndpoint("OrdersApi", "/health");
+}).AddInMemoryStorage();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// 5. Configuración del Pipeline [cite: 1155]
+app.UseMiddleware<CorrelationIdMiddleware>();
+
+app.UseSerilogRequestLogging(options =>
+{
+    options.GetLevel = (httpContext, elapsed, ex) =>
+        ex != null ? LogEventLevel.Error :
+        httpContext.Request.Path.StartsWithSegments("/health") ? LogEventLevel.Verbose :
+        LogEventLevel.Information;
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseExceptionHandler(); // [cite: 1145]
 
-var summaries = new[]
+app.MapHealthChecks("/health", new HealthCheckOptions
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+app.MapHealthChecksUI(setup => setup.UIPath = "/health-ui");
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
