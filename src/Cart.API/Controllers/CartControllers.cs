@@ -2,13 +2,14 @@
 {
     using Cart.API.Models;
     using Microsoft.AspNetCore.Mvc;
+    using Cart.API.Exceptions;
 
     [ApiController]
     [Route("api/[controller]")]
     public class CartController : ControllerBase
     {
         // Simulamos la base de datos
-        private static readonly List<Cart> _carts = new();
+        private static readonly List<Cart_> _carts = new();
 
         // (Asumimos que tenés acceso a los productos para validar stock)
         // private readonly IProductRepository _productRepo; 
@@ -31,13 +32,13 @@
 
             // Acá en la realidad irías a buscar el producto a la DB
             // var product = _productRepo.GetById(request.ProductoId);
-            [cite_start]// if (product == null) throw new NotFoundException("CRT-002", "Producto no encontrado."); 
-            [cite_start]// if (product.Stock < request.Cantidad) throw new BusinessRuleException("CRT-003", "Stock insuficiente."); 
+            // if (product == null) throw new NotFoundException("CRT-002", "Producto no encontrado."); 
+            // if (product.Stock < request.Cantidad) throw new BusinessRuleException("CRT-003", "Stock insuficiente."); 
 
             var cart = _carts.FirstOrDefault(c => c.UsuarioId == userId);
             if (cart == null)
             {
-                cart = new Cart { UsuarioId = userId };
+                cart = new Cart_ { UsuarioId = userId };
                 _carts.Add(cart);
             }
 

@@ -2,6 +2,7 @@
 {
     using Microsoft.AspNetCore.Mvc;
     using Orders.API.Models;
+    using Orders.API.Exceptions;
 
     [ApiController]
     [Route("api/[controller]")]
@@ -38,7 +39,7 @@
             foreach (var item in request.Items)
             {
                 // Validar stock real (simulado acá)
-                [cite_start]// if (producto.Stock < item.Cantidad) throw new BusinessRuleException("ORD-005", "Stock insuficiente..."); 
+                // if (producto.Stock < item.Cantidad) throw new BusinessRuleException("ORD-005", "Stock insuficiente..."); 
 
                 totalCalculado += (item.PrecioUnitario * item.Cantidad);
             }
