@@ -3,19 +3,20 @@
     using Microsoft.AspNetCore.Diagnostics;
     using Orders.API.Exceptions;
 
-    public class BadRequestExceptionHandler : IExceptionHandler
+
+    public class UnprocessableEntityExceptionHandler : IExceptionHandler
     {
         public async ValueTask<bool> TryHandleAsync(HttpContext context, Exception exception, CancellationToken cancellationToken)
         {
-            if (exception is not BadRequestException ex) return false;
+            if (exception is not UnprocessableEntityException ex) return false;
 
-            context.Response.StatusCode = 400;
+            context.Response.StatusCode = 422;
             await context.Response.WriteAsJsonAsync(new
             {
-                type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
-                title = "Bad Request",
-                status = 400,
-                detail = "La solicitud contiene datos inválidos.",
+                type = "https://tools.ietf.org/html/rfc4918#section-11.2",
+                title = "Unprocessable Entity",
+                status = 422,
+                detail = "No se puede procesar la solicitud.",
                 instance = context.Request.Path.Value,
                 errorCode = ex.ErrorCode,
                 errorMessage = ex.Message
@@ -23,5 +24,4 @@
             return true;
         }
     }
-
 }

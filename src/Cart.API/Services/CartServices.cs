@@ -6,22 +6,22 @@ namespace Cart.API.Services
 {
     public interface ICartService
     {
-        Cart GetCart(Guid userId);
-        Cart AddItem(Guid userId, CartItem request);
+        Cart_ GetCart(Guid userId);
+        Cart_ AddItem(Guid userId, CartItem request);
     }
 
     public class CartService : ICartService
     {
-        private static readonly List<Cart> _carts = new();
+        private static readonly List<Cart_> _carts = new();
 
-        public Cart GetCart(Guid userId)
+        public Cart_ GetCart(Guid userId)
         {
             var cart = _carts.FirstOrDefault(c => c.UsuarioId == userId);
             if (cart == null) throw new NotFoundException("CRT-001", "Carrito no encontrado.");
             return cart;
         }
 
-        public Cart AddItem(Guid userId, CartItem request)
+        public Cart_ AddItem(Guid userId, CartItem request)
         {
             if (request.Cantidad <= 0)
                 throw new BadRequestException("CRT-004", "Cantidad inválida.");
@@ -37,7 +37,7 @@ namespace Cart.API.Services
             var cart = _carts.FirstOrDefault(c => c.UsuarioId == userId);
             if (cart == null)
             {
-                cart = new Cart { UsuarioId = userId };
+                cart = new Cart_ { UsuarioId = userId };
                 _carts.Add(cart);
             }
 
