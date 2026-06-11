@@ -56,38 +56,41 @@ builder.Services.AddExceptionHandler<NotFoundExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 // 4. Health Checks 
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(), tags: new[] { "live", "ready" });
+
+
 builder.Services.AddHealthChecksUI(setup =>
 {
     setup.SetEvaluationTimeInSeconds(600);
+    
     setup.AddHealthCheckEndpoint("CartApi", "/health");
 }).AddInMemoryStorage();
 
 var app = builder.Build();
 
-// 5. Configuración del Pipeline [cite: 1155]
-app.UseMiddleware<CorrelationIdMiddleware>();
-
-app.UseSerilogRequestLogging(options =>
+// Mapeo general
+app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
-    options.GetLevel = (httpContext, elapsed, ex) =>
-        ex != null ? LogEventLevel.Error :
-        httpContext.Request.Path.StartsWithSegments("/health") ? LogEventLevel.Verbose :
-        LogEventLevel.Information;
+    ResponseWriter = HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse
 });
 
-if (app.Environment.IsDevelopment())
+// Mapeo exclusivo de Liveness (¿Estoy vivo?)
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseExceptionHandler(); // [cite: 1145]
-
-app.MapHealthChecks("/health", new HealthCheckOptions
-{
-    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+    Predicate = check => check.Tags.Contains("live"),
+    ResponseWriter = HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse
 });
+
+// Mapeo exclusivo de Readiness (¿Estoy listo para recibir peticiones?)
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+// Mapeo de la interfaz gráfica
 app.MapHealthChecksUI(setup => setup.UIPath = "/health-ui");
 
 app.MapControllers();
