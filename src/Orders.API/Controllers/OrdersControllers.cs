@@ -2,72 +2,45 @@
 {
     using Microsoft.AspNetCore.Mvc;
     using Orders.API.Models;
-    using Orders.API.Exceptions;
+    using Orders.API.Services;
 
     [ApiController]
     [Route("api/[controller]")]
     public class OrdersController : ControllerBase
     {
-        private static readonly List<Order> _orders = new();
+        private readonly IOrderService _orderService;
+
+        // Inyectamos el servicio
+        public OrdersController(IOrderService orderService)
+        {
+            _orderService = orderService;
+        }
 
         [HttpGet]
         public IActionResult GetOrders([FromQuery] Guid? usuarioId)
         {
-            var query = _orders.AsQueryable();
-            if (usuarioId.HasValue) query = query.Where(o => o.UsuarioId == usuarioId);
-
-            return Ok(query.ToList());
+            return Ok(_orderService.GetOrders(usuarioId));
         }
 
         [HttpGet("{id}")]
         public IActionResult GetOrder(Guid id)
         {
-            var order = _orders.FirstOrDefault(o => o.Id == id);
-            if (order == null) throw new NotFoundException("ORD-001", "Orden no encontrada."); // [cite: 154]
-
-            return Ok(order);
+            return Ok(_orderService.GetOrder(id));
         }
 
         [HttpPost]
-        public IActionResult CreateOrder([FromBody] Order request)
+        public async Task<IActionResult> CreateOrder([FromBody] Order request)
         {
-            if (request.Items == null || !request.Items.Any())
-                throw new BusinessRuleException("ORD-002", "Los datos de la orden son inválidos."); // 
-
-            // Lógica de cálculo: en un entorno real, buscarías el precio de cada producto en la BD.
-            decimal totalCalculado = 0;
-            foreach (var item in request.Items)
-            {
-                // Validar stock real (simulado acá)
-                // if (producto.Stock < item.Cantidad) throw new BusinessRuleException("ORD-005", "Stock insuficiente..."); 
-
-                totalCalculado += (item.PrecioUnitario * item.Cantidad);
-            }
-
-            request.Total = totalCalculado;
-            request.Estado = "Pendiente";
-            request.Id = Guid.NewGuid();
-            request.FechaCreacion = DateTime.UtcNow;
-
-            _orders.Add(request);
-            return CreatedAtAction(nameof(GetOrder), new { id = request.Id }, request); // [cite: 152]
+            var order = await _orderService.CreateOrderAsync(request);
+            // Mantenemos el CreatedAtAction que ya tenías para devolver código 201 [cite: 1171]
+            return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
         }
 
         [HttpPut("{id}/status")]
         public IActionResult UpdateOrderStatus(Guid id, [FromBody] Order statusUpdate)
         {
-            var order = _orders.FirstOrDefault(o => o.Id == id);
-            if (order == null) throw new NotFoundException("ORD-001", "Orden no encontrada."); // [cite: 154]
-
-            // Validación de máquina de estados: No podés volver de Entregada a Pendiente
-            if (order.Estado == "Entregada" && statusUpdate.Estado == "Pendiente")
-                throw new BusinessRuleException("ORD-006", "El estado de la orden no puede ser modificado."); // 
-
-            order.Estado = statusUpdate.Estado;
-            order.FechaActualizacion = DateTime.UtcNow;
-
+            var order = _orderService.UpdateOrderStatus(id, statusUpdate);
             return Ok(order);
         }
     }
-
 }
