@@ -8,7 +8,9 @@ namespace Cart.API.Services
 
     public interface ICartService
     {
-        // Usamos Task porque las llamadas HTTP son asíncronas
         Task<Cart_> AddItemAsync(Guid userId, CartItem request);
+        Task<Cart_> GetCartAsync(Guid userId);
+        Task<Cart_> UpdateItemQuantityAsync(Guid userId, Guid productoId, int cantidad);
+        Task<Cart_> RemoveItemAsync(Guid userId, Guid productoId);
     }
 }
