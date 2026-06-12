@@ -1,0 +1,27 @@
+namespace Notifications.API.Middleware;
+
+public class CorrelationIdMiddleware
+{
+    public const string HeaderName = "X-Correlation-Id";
+    public const string ItemKey = "CorrelationId";
+
+    private readonly RequestDelegate _next;
+
+    public CorrelationIdMiddleware(RequestDelegate next)
+    {
+        _next = next;
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        var correlationId = context.Request.Headers.TryGetValue(HeaderName, out var existingValue)
+            && !string.IsNullOrWhiteSpace(existingValue)
+            ? existingValue.ToString()
+            : Guid.NewGuid().ToString();
+
+        context.Items[ItemKey] = correlationId;
+        context.Response.Headers[HeaderName] = correlationId;
+
+        await _next(context);
+    }
+}

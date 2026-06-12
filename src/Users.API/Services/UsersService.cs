@@ -2,7 +2,6 @@
 using Users.API.DTOs;
 using Users.API.Exceptions;
 using Users.API.Models;
-using Users.API.Services;
 
 namespace Users.API.Services;
 
@@ -118,6 +117,30 @@ public class UsersService(IUserRepository userRepository) : IUsersService
             Nombre = user.Nombre,
             Apellido = user.Apellido,
             Email = user.Email
+        };
+    }
+
+    public async Task<UserResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        // Decisión de diseño:
+        // Se incorpora este método para soportar validaciones HTTP entre microservicios
+        // (por ejemplo Notifications -> Users), manteniendo una respuesta segura
+        // que no expone PasswordHash y respetando el estilo REST del TP.
+        var user = await userRepository.GetByIdAsync(id);
+
+        if (user is null)
+        {
+            throw new NotFoundException("USR-007", "Usuario no encontrado.");
+        }
+
+        return new UserResponse
+        {
+            Id = user.Id,
+            Nombre = user.Nombre,
+            Apellido = user.Apellido,
+            Email = user.Email,
+            FechaRegistro = user.FechaRegistro,
+            Activo = user.Activo
         };
     }
 }
