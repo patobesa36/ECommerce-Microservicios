@@ -2,13 +2,16 @@
 {
     using Products.API.Models;
     using Products.API.DTOs;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
 
     public interface IProductService
     {
-        List<Product> GetProducts(string? categoria, string? nombre);
-        Product GetProduct(Guid id);
-        Product CreateProduct(ProductCreateUpdateDto request);
-        Product UpdateProduct(Guid id, ProductCreateUpdateDto request);
-        void DeleteProduct(Guid id);
+        Task<IEnumerable<Product>> GetProductsAsync(string? categoria, string? nombre);
+        Task<Product> GetProductAsync(Guid id);
+        Task<Product> CreateProductAsync(ProductCreateUpdateDto request);
+        Task<Product> UpdateProductAsync(Guid id, ProductCreateUpdateDto request);
+        Task DeleteProductAsync(Guid id);
     }
 }

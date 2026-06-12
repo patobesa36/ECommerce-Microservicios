@@ -1,86 +1,93 @@
 ﻿namespace Products.API.Services
 {
+    using Products.API.Models;
     using Products.API.DTOs;
     using Products.API.Exceptions;
-    using Products.API.Models;
+    using Products.API.Data;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
 
     public class ProductService : IProductService
     {
-       
-        private static readonly List<Product> _products = new();
+        // 1. Inyectamos la base de datos
+        private readonly IProductRepository _productRepository;
 
-        public List<Product> GetProducts(string? categoria, string? nombre)
+        public ProductService(IProductRepository productRepository)
         {
-            var query = _products.AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(categoria))
-                query = query.Where(p => p.Categoria.Equals(categoria, StringComparison.OrdinalIgnoreCase));
-
-            if (!string.IsNullOrWhiteSpace(nombre))
-                query = query.Where(p => p.Nombre.Contains(nombre, StringComparison.OrdinalIgnoreCase));
-
-            return query.ToList();
+            _productRepository = productRepository;
         }
 
-        public Product GetProduct(Guid id)
+        public async Task<IEnumerable<Product>> GetProductsAsync(string? categoria, string? nombre)
         {
-            var product = _products.FirstOrDefault(p => p.Id == id);
+            // 2. Buscamos directo en SQLite
+            return await _productRepository.GetAllAsync(categoria, nombre);
+        }
+
+        public async Task<Product> GetProductAsync(Guid id)
+        {
+            var product = await _productRepository.GetByIdAsync(id);
             if (product == null)
                 throw new NotFoundException("PRD-001", "Producto no encontrado.");
 
             return product;
         }
 
-        public Product CreateProduct(ProductCreateUpdateDto request)
+        public async Task<Product> CreateProductAsync(ProductCreateUpdateDto request)
         {
             if (string.IsNullOrWhiteSpace(request.Nombre) || request.Precio <= 0)
                 throw new BusinessRuleException("PRD-002", "Los datos del producto son inválidos.");
 
-            if (_products.Any(p => p.Nombre.Equals(request.Nombre, StringComparison.OrdinalIgnoreCase)))
+            // Validamos si ya existe el nombre en la BD
+            var existingProduct = await _productRepository.GetByNameAsync(request.Nombre);
+            if (existingProduct != null)
                 throw new BusinessRuleException("PRD-003", "Ya existe un producto con el mismo nombre.");
 
-            
             var product = new Product
             {
-                Id = Guid.NewGuid(), 
+                Id = Guid.NewGuid(),
                 Nombre = request.Nombre,
                 Descripcion = request.Descripcion,
                 Precio = request.Precio,
                 Stock = request.Stock,
                 Categoria = request.Categoria,
-                FechaCreacion = DateTime.UtcNow 
+                FechaCreacion = DateTime.UtcNow
             };
 
-            _products.Add(product);
+            // Guardamos en SQLite
+            await _productRepository.CreateAsync(product);
             return product;
         }
 
-        public Product UpdateProduct(Guid id, ProductCreateUpdateDto request)
+        public async Task<Product> UpdateProductAsync(Guid id, ProductCreateUpdateDto request)
         {
-            var product = _products.FirstOrDefault(p => p.Id == id);
+            var product = await _productRepository.GetByIdAsync(id);
             if (product == null)
                 throw new NotFoundException("PRD-001", "Producto no encontrado.");
 
             if (string.IsNullOrWhiteSpace(request.Nombre) || request.Precio <= 0)
                 throw new BusinessRuleException("PRD-002", "Los datos del producto son inválidos.");
 
-            
             product.Nombre = request.Nombre;
             product.Descripcion = request.Descripcion;
             product.Precio = request.Precio;
             product.Stock = request.Stock;
             product.Categoria = request.Categoria;
 
+            // Actualizamos en SQLite
+            await _productRepository.UpdateAsync(product);
+
             return product;
         }
 
-        public void DeleteProduct(Guid id)
+        public async Task DeleteProductAsync(Guid id)
         {
-            var product = _products.FirstOrDefault(p => p.Id == id);
+            var product = await _productRepository.GetByIdAsync(id);
             if (product == null)
                 throw new NotFoundException("PRD-001", "Producto no encontrado.");
 
-            _products.Remove(product);
+            // Eliminamos de SQLite
+            await _productRepository.DeleteAsync(id);
         }
     }
 }

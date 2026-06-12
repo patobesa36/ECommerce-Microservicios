@@ -44,9 +44,18 @@ builder.Services.AddSwaggerGen(c =>
     c.IncludeXmlComments(xmlPath);
 });
 
-// Inyección de servicios para Cart 
-builder.Services.AddHttpClient();
-builder.Services.AddScoped<ICartService, CartService>();
+// ---------------------------------------------------------
+// INYECCIÓN DE SERVICIOS Y HTTP CLIENT
+// ---------------------------------------------------------
+// Esto registra el servicio Y le inyecta automáticamente el HttpClient para hablar con Products
+builder.Services.AddHttpClient<Cart.API.Services.ICartService, Cart.API.Services.CartService>();
+
+// ---------------------------------------------------------
+// PERSISTENCIA: REPOSITORIO E INICIALIZADOR SQLITE
+// ---------------------------------------------------------
+builder.Services.AddScoped<Cart.API.Data.ICartRepository, Cart.API.Data.CartRepository>();
+builder.Services.AddSingleton<Cart.API.Data.DatabaseInitializer>();
+
 
 // 3. Manejo Global de Errores (Orden estricto de específico a genérico) [cite: 1145, 1180]
 builder.Services.AddExceptionHandler<BadRequestExceptionHandler>();
@@ -56,10 +65,10 @@ builder.Services.AddExceptionHandler<NotFoundExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 // 4. Health Checks 
+// Configuración de Health Checks para el Carrito
 builder.Services.AddHealthChecks()
-    
-    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(), tags: new[] { "live", "ready" });
-
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(), tags: new[] { "live" })
+    .AddCheck<Cart.API.HealthChecks.SqliteHealthCheck>("CartDB", tags: new[] { "ready" });
 
 builder.Services.AddHealthChecksUI(setup =>
 {
@@ -69,6 +78,12 @@ builder.Services.AddHealthChecksUI(setup =>
 }).AddInMemoryStorage();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var initializer = scope.ServiceProvider.GetRequiredService<Cart.API.Data.DatabaseInitializer>();
+    initializer.Initialize();
+}
 
 // Mapeo general
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
