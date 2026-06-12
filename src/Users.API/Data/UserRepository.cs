@@ -1,7 +1,6 @@
 ﻿using Dapper;
-using Microsoft.Data.Sqlite;
-using Users.API.Data;
 using Users.API.Models;
+using Microsoft.Data.Sqlite;
 
 namespace Users.API.Data;
 
@@ -11,6 +10,28 @@ public class UserRepository(IConfiguration configuration) : IUserRepository
         configuration.GetConnectionString("DefaultConnection") ?? "Data Source=app.db";
 
     private SqliteConnection CreateConnection() => new(_connectionString);
+
+    public async Task<User?> GetByIdAsync(Guid id)
+    {
+        using var connection = CreateConnection();
+
+        return await connection.QueryFirstOrDefaultAsync<User>(
+            """
+            SELECT
+                id                AS Id,
+                nombre            AS Nombre,
+                apellido          AS Apellido,
+                email             AS Email,
+                password_hash     AS PasswordHash,
+                fecha_registro    AS FechaRegistro,
+                activo            AS Activo,
+                intentos_fallidos AS IntentosFallidos
+            FROM users
+            WHERE id = @Id
+            LIMIT 1;
+            """,
+            new { Id = id.ToString() });
+    }
 
     public async Task<User?> GetByEmailAsync(string email)
     {

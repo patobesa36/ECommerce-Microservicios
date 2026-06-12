@@ -50,12 +50,6 @@ public class UsersController(IUsersService usersService) : ControllerBase
     /// }
     /// </code>
     /// </remarks>
-    /// <param name="request">Datos necesarios para registrar un usuario.</param>
-    /// <param name="cancellationToken">Token de cancelación de la request.</param>
-    /// <response code="201">Usuario creado exitosamente.</response>
-    /// <response code="400">Los datos del usuario son inválidos (USR-002).</response>
-    /// <response code="409">El email ya está registrado (USR-001).</response>
-    /// <response code="500">Error interno al procesar el usuario (USR-006).</response>
     [HttpPost("register")]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -78,50 +72,7 @@ public class UsersController(IUsersService usersService) : ControllerBase
     ///   "password": "MiPassword123!"
     /// }
     /// </code>
-    ///
-    /// Ejemplo de response 200:
-    /// <code>
-    /// {
-    ///   "id": "a1b2c3d4-0000-0000-0000-111122223333",
-    ///   "nombre": "María",
-    ///   "apellido": "González",
-    ///   "email": "maria@email.com"
-    /// }
-    /// </code>
-    ///
-    /// Ejemplo de response 401 (USR-003):
-    /// <code>
-    /// {
-    ///   "type": "https://tools.ietf.org/html/rfc7235#section-3.1",
-    ///   "title": "Unauthorized",
-    ///   "status": 401,
-    ///   "detail": "Las credenciales no son válidas.",
-    ///   "instance": "/api/users/login",
-    ///   "errorCode": "USR-003",
-    ///   "errorMessage": "Credenciales incorrectas."
-    /// }
-    /// </code>
-    ///
-    /// Ejemplo de response 403 (USR-004):
-    /// <code>
-    /// {
-    ///   "type": "https://tools.ietf.org/html/rfc7231#section-6.5.3",
-    ///   "title": "Forbidden",
-    ///   "status": 403,
-    ///   "detail": "El acceso está prohibido.",
-    ///   "instance": "/api/users/login",
-    ///   "errorCode": "USR-004",
-    ///   "errorMessage": "Su cuenta fue bloqueada por superar el máximo de intentos fallidos. Contacte a soporte."
-    /// }
-    /// </code>
     /// </remarks>
-    /// <param name="request">Credenciales del usuario.</param>
-    /// <param name="cancellationToken">Token de cancelación de la request.</param>
-    /// <response code="200">Login exitoso.</response>
-    /// <response code="400">Los datos del usuario son inválidos (USR-002).</response>
-    /// <response code="401">Credenciales incorrectas (USR-003).</response>
-    /// <response code="403">Usuario bloqueado (USR-004 o USR-005).</response>
-    /// <response code="500">Error interno al procesar el usuario (USR-006).</response>
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -131,6 +82,57 @@ public class UsersController(IUsersService usersService) : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
         var response = await usersService.LoginAsync(request, cancellationToken);
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Obtiene un usuario por identificador.
+    /// </summary>
+    /// <remarks>
+    /// Decisión de diseño:
+    /// este endpoint se incorpora como soporte interno para integración entre microservicios,
+    /// principalmente para que Notifications.API pueda validar la existencia del usuario
+    /// destinatario mediante comunicación HTTP, tal como exige la consigna.
+    ///
+    /// La respuesta reutiliza un DTO seguro y nunca expone PasswordHash.
+    ///
+    /// Ejemplo de response 200:
+    /// <code>
+    /// {
+    ///   "id": "a1b2c3d4-0000-0000-0000-111122223333",
+    ///   "nombre": "María",
+    ///   "apellido": "González",
+    ///   "email": "maria@email.com",
+    ///   "fechaRegistro": "2024-03-10T09:00:00Z",
+    ///   "activo": true
+    /// }
+    /// </code>
+    ///
+    /// Ejemplo de response 404 (USR-007):
+    /// <code>
+    /// {
+    ///   "type": "https://tools.ietf.org/html/rfc7231#section-6.5.4",
+    ///   "title": "Not Found",
+    ///   "status": 404,
+    ///   "detail": "El recurso solicitado no fue encontrado.",
+    ///   "instance": "/api/users/a1b2c3d4-0000-0000-0000-111122223333",
+    ///   "errorCode": "USR-007",
+    ///   "errorMessage": "Usuario no encontrado."
+    /// }
+    /// </code>
+    /// </remarks>
+    /// <param name="id">Identificador del usuario.</param>
+    /// <param name="cancellationToken">Token de cancelación de la request.</param>
+    /// <response code="200">Usuario encontrado.</response>
+    /// <response code="404">Usuario no encontrado (USR-007).</response>
+    /// <response code="500">Error interno al procesar el usuario (USR-006).</response>
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var response = await usersService.GetByIdAsync(id, cancellationToken);
         return Ok(response);
     }
 }
