@@ -44,16 +44,21 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddExceptionHandler<NotFoundExceptionHandler>();
 builder.Services.AddExceptionHandler<BusinessRuleExceptionHandler>();
 builder.Services.AddProblemDetails();
+// Inyección de dependencias de tus Servicios
+builder.Services.AddScoped<Products.API.Services.IProductService, Products.API.Services.ProductService>();
 
-// 4. Health Checks
-builder.Services.AddHealthChecks();
+// // 4. Health Checks
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(), tags: new[] { "live", "ready" });
+
 builder.Services.AddHealthChecksUI(setup =>
 {
     setup.SetEvaluationTimeInSeconds(600);
-    setup.AddHealthCheckEndpoint("MiApi", "/health");
+    setup.AddHealthCheckEndpoint("ProductsApi", "/health"); // Nombre ajustado para Products
 }).AddInMemoryStorage();
 
 var app = builder.Build();
+
 
 // 5. Configuración del Pipeline
 app.UseMiddleware<CorrelationIdMiddleware>();
@@ -74,15 +79,30 @@ if (app.Environment.IsDevelopment())
 
 app.UseExceptionHandler();
 
-app.MapHealthChecks("/health", new HealthCheckOptions
+
+app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
-    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+    ResponseWriter = HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse
 });
+
+// Endpoint exclusivo de Liveness (¿Estoy vivo?)
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("live"),
+    ResponseWriter = HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+// Endpoint exclusivo de Readiness (¿Estoy listo para recibir tráfico?)
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+// Interfaz gráfica de monitoreo
 app.MapHealthChecksUI(setup => setup.UIPath = "/health-ui");
 
 app.MapControllers();
-
 app.Run();
 
 
-// Hola
