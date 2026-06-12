@@ -1,15 +1,16 @@
-﻿using System;
-
-namespace Orders.API.Services
+﻿namespace Orders.API.Services
 {
     using Orders.API.Models;
+    using Orders.API.DTOs;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
 
-    public interface IOrderService
+    public interface IOrderServices
     {
-        List<Order> GetOrders(Guid? usuarioId);
-        Order GetOrder(Guid id);
-        // Usamos Task porque la creación consulta la API de productos
+        Task<IEnumerable<Order>> GetOrdersAsync(Guid userId);
+        Task<Order> GetOrderAsync(Guid id);
         Task<Order> CreateOrderAsync(Order request);
-        Order UpdateOrderStatus(Guid id, Order statusUpdate);
+        Task<Order> UpdateOrderStatusAsync(Guid id, UpdateOrderStatusDto request);
     }
 }

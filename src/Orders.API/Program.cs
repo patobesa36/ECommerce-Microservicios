@@ -37,15 +37,26 @@ builder.Host.UseSerilog();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
+
 {
     var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
 });
 
-// Inyección de servicios para Orders 
-builder.Services.AddHttpClient();
-builder.Services.AddScoped<IOrderService, OrderService>();
+// ---------------------------------------------------------
+// INYECCIÓN DE SERVICIOS Y HTTP CLIENTS 
+// ---------------------------------------------------------
+// Registra el servicio de órdenes y le inyecta el HttpClient para Productos
+builder.Services.AddHttpClient<Orders.API.Services.IOrderServices, Orders.API.Services.OrderService>();
+// Registra el cliente para comunicarse con Users.API
+builder.Services.AddHttpClient<Orders.API.Services.IUsersApiClient, Orders.API.Services.UsersApiClient>();
+
+// ---------------------------------------------------------
+// PERSISTENCIA: REPOSITORIO E INICIALIZADOR SQLITE 
+// ---------------------------------------------------------
+builder.Services.AddScoped<Orders.API.Data.IOrderRepository, Orders.API.Data.OrderRepository>();
+builder.Services.AddSingleton<Orders.API.Data.DatabaseInitializer>();
 
 // 3. Manejo Global de Errores (Orden estricto de específico a genérico) [cite: 1145, 1180]
 builder.Services.AddExceptionHandler<BadRequestExceptionHandler>();
@@ -56,8 +67,8 @@ builder.Services.AddProblemDetails();
 
 // 4. Health Checks 
 builder.Services.AddHealthChecks()
-    
-    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(), tags: new[] { "live", "ready" });
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(), tags: new[] { "live" })
+    .AddCheck<Orders.API.HealthChecks.SqliteHealthCheck>("OrdersDB", tags: new[] { "ready" });
 
 
 builder.Services.AddHealthChecksUI(setup =>
@@ -68,6 +79,13 @@ builder.Services.AddHealthChecksUI(setup =>
 }).AddInMemoryStorage();
 
 var app = builder.Build();
+
+// Inicializar la BD
+using (var scope = app.Services.CreateScope())
+{
+    var initializer = scope.ServiceProvider.GetRequiredService<Orders.API.Data.DatabaseInitializer>();
+    initializer.Initialize();
+}
 
 // Mapeo general
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions

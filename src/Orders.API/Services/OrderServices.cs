@@ -2,61 +2,74 @@
 {
     using Orders.API.Models;
     using Orders.API.Exceptions;
+    using Orders.API.DTOs;
+    using Orders.API.Data;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Net.Http;
     using System.Text.Json;
+    using System.Threading.Tasks;
 
-    public class OrderService : IOrderService
+    public class OrderService : IOrderServices
     {
-        // Mudamos la base de datos simulada acá
-        private static readonly List<Order> _orders = new();
+        // 1. Inyectamos nuestro repositorio y nuestros clientes HTTP
+        private readonly IOrderRepository _orderRepository;
+        private readonly HttpClient _productsHttpClient;
+        private readonly IUsersApiClient _usersApiClient;
 
-        private readonly HttpClient _httpClient;
-
-        public OrderService(HttpClient httpClient)
+        public OrderService(
+            IOrderRepository orderRepository,
+            HttpClient productsHttpClient,
+            IUsersApiClient usersApiClient)
         {
-            _httpClient = httpClient;
-            // IMPORTANTE: Asegurate de que este puerto sea el de tu Products.API
-            _httpClient.BaseAddress = new Uri("https://localhost:7001/");
+            _orderRepository = orderRepository;
+            _usersApiClient = usersApiClient;
+
+            _productsHttpClient = productsHttpClient;
+            _productsHttpClient.BaseAddress = new Uri("https://localhost:7001/"); // Puerto de Products.API
         }
 
-        public List<Order> GetOrders(Guid? usuarioId)
+        public async Task<IEnumerable<Order>> GetOrdersAsync(Guid userId)
         {
-            var query = _orders.AsQueryable();
-            if (usuarioId.HasValue) query = query.Where(o => o.UsuarioId == usuarioId);
-            return query.ToList();
+            // Buscamos directo en SQLite
+            return await _orderRepository.GetByUserIdAsync(userId);
         }
 
-        public Order GetOrder(Guid id)
+        public async Task<Order> GetOrderAsync(Guid id)
         {
-            var order = _orders.FirstOrDefault(o => o.Id == id);
-            if (order == null) throw new NotFoundException("ORD-001", "Orden no encontrada."); // [cite: 1164]
+            var order = await _orderRepository.GetByIdAsync(id);
+            if (order == null)
+                throw new NotFoundException("ORD-001", "La orden solicitada no existe.");
+
             return order;
         }
 
         public async Task<Order> CreateOrderAsync(Order request)
         {
             if (request.Items == null || !request.Items.Any())
-                throw new BusinessRuleException("ORD-002", "Los datos de la orden son inválidos."); // [cite: 1165]
+                throw new BusinessRuleException("ORD-002", "Los datos de la orden son inválidos.");
 
-            // Falta validar el usuario (ORD-003) en Users API, lo podés agregar después.
+            // Validamos que el usuario exista en Users.API
+            var userExists = await _usersApiClient.UserExistsAsync(request.UsuarioId);
+            if (!userExists)
+                throw new NotFoundException("ORD-003", $"El usuario con ID {request.UsuarioId} no existe o no es válido.");
 
             decimal totalCalculado = 0;
 
             foreach (var item in request.Items)
             {
-                // 1. Buscamos el producto en la API real
-                var response = await _httpClient.GetAsync($"api/products/{item.ProductoId}");
+                var response = await _productsHttpClient.GetAsync($"api/products/{item.ProductoId}");
 
                 if (!response.IsSuccessStatusCode)
-                    throw new NotFoundException("ORD-004", "Producto no encontrado al crear la orden."); // [cite: 1167]
+                    throw new NotFoundException("ORD-004", "Producto no encontrado al crear la orden.");
 
                 var productContent = await response.Content.ReadAsStringAsync();
                 var product = JsonSerializer.Deserialize<ProductDto>(productContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                // 2. Validamos el stock real que exige el TP
                 if (product == null || product.Stock < item.Cantidad)
-                    throw new BusinessRuleException("ORD-005", $"Stock insuficiente. Disponible: {product?.Stock}, solicitado: {item.Cantidad}."); // [cite: 1168]
+                    throw new BusinessRuleException("ORD-005", $"Stock insuficiente. Disponible: {product?.Stock}, solicitado: {item.Cantidad}.");
 
-                // 3. Tomamos el precio real del producto (no confiamos en el precio que envía el front-end/Swagger)
                 item.PrecioUnitario = product.Precio;
                 totalCalculado += (item.PrecioUnitario * item.Cantidad);
             }
@@ -66,30 +79,23 @@
             request.Id = Guid.NewGuid();
             request.FechaCreacion = DateTime.UtcNow;
 
-            _orders.Add(request);
+            // 2. Guardamos la cabecera y el detalle en SQLite usando nuestra Transacción
+            await _orderRepository.CreateAsync(request);
+
             return request;
         }
 
-        public Order UpdateOrderStatus(Guid id, Order statusUpdate)
+        public async Task<Order> UpdateOrderStatusAsync(Guid id, UpdateOrderStatusDto request)
         {
-            var order = _orders.FirstOrDefault(o => o.Id == id);
-            if (order == null) throw new NotFoundException("ORD-001", "Orden no encontrada."); // [cite: 1164]
+            var order = await _orderRepository.GetByIdAsync(id);
+            if (order == null)
+                throw new NotFoundException("ORD-001", "La orden solicitada no existe.");
 
-            if (order.Estado == "Entregada" && statusUpdate.Estado == "Pendiente")
-                throw new BusinessRuleException("ORD-006", "El estado de la orden no puede ser modificado."); // [cite: 1169]
+            // 3. Actualizamos el estado en SQLite
+            await _orderRepository.UpdateStatusAsync(id, request.Estado);
 
-            order.Estado = statusUpdate.Estado;
-            order.FechaActualizacion = DateTime.UtcNow;
-
+            order.Estado = request.Estado;
             return order;
-        }
-
-        // Clase auxiliar para mapear el JSON de la API de Productos
-        private class ProductDto
-        {
-            public Guid Id { get; set; }
-            public int Stock { get; set; }
-            public decimal Precio { get; set; }
         }
     }
 }

@@ -46,10 +46,17 @@ builder.Services.AddExceptionHandler<BusinessRuleExceptionHandler>();
 builder.Services.AddProblemDetails();
 // Inyección de dependencias de tus Servicios
 builder.Services.AddScoped<Products.API.Services.IProductService, Products.API.Services.ProductService>();
+builder.Services.AddScoped<Products.API.Data.IProductRepository, Products.API.Data.ProductRepository>();
+builder.Services.AddSingleton<Products.API.Data.DatabaseInitializer>();
+
 
 // // 4. Health Checks
+// Configuración de Health Checks
 builder.Services.AddHealthChecks()
-    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(), tags: new[] { "live", "ready" });
+    // El "live" sigue siendo un chequeo básico (la API prendió)
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(), tags: new[] { "live" })
+    // El "ready" ahora comprueba que la base de datos responda
+    .AddCheck<Products.API.HealthChecks.SqliteHealthCheck>("ProductsDB", tags: new[] { "ready" });
 
 builder.Services.AddHealthChecksUI(setup =>
 {
@@ -59,6 +66,12 @@ builder.Services.AddHealthChecksUI(setup =>
 
 var app = builder.Build();
 
+// Ejecutamos la creación de la base de datos al arrancar
+using (var scope = app.Services.CreateScope())
+{
+    var initializer = scope.ServiceProvider.GetRequiredService<Products.API.Data.DatabaseInitializer>();
+    initializer.Initialize();
+}
 
 // 5. Configuración del Pipeline
 app.UseMiddleware<CorrelationIdMiddleware>();

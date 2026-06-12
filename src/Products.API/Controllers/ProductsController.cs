@@ -1,9 +1,13 @@
 namespace Products.API.Controllers
 {
+    using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc;
-    using Products.API.DTOs;
     using Products.API.Models;
+    using Products.API.DTOs;
     using Products.API.Services;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
 
     [ApiController]
     [Route("api/[controller]")]
@@ -19,74 +23,60 @@ namespace Products.API.Controllers
         /// <summary>
         /// Lista los productos disponibles, opcionalmente filtrados por categoría o nombre.
         /// </summary>
-        /// <param name="categoria">Filtro opcional por categoría (ej. Electrónica)</param>
-        /// <param name="nombre">Filtro opcional por nombre</param>
-        /// <response code="200">Retorna la lista de productos</response>
-        /// <response code="500">Error interno del servidor</response>
         [HttpGet]
-        [ProducesResponseType(typeof(List<Product>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-        public IActionResult GetProducts([FromQuery] string? categoria, [FromQuery] string? nombre)
+        [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetProducts([FromQuery] string? categoria, [FromQuery] string? nombre)
         {
-            return Ok(_productService.GetProducts(categoria, nombre));
+            var products = await _productService.GetProductsAsync(categoria, nombre);
+            return Ok(products);
         }
 
         /// <summary>
         /// Obtiene el detalle de un producto específico por su ID.
         /// </summary>
-        /// <response code="200">Retorna el producto solicitado</response>
-        /// <response code="404">Producto no encontrado (ErrorCode: PRD-001)</response>
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(Product), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public IActionResult GetProduct(Guid id)
+        public async Task<IActionResult> GetProduct(Guid id)
         {
-            return Ok(_productService.GetProduct(id));
+            var product = await _productService.GetProductAsync(id);
+            return Ok(product);
         }
 
         /// <summary>
         /// Crea un nuevo producto en el catálogo.
         /// </summary>
-        /// <response code="201">Producto creado exitosamente</response>
-        /// <response code="422">Los datos del producto son inválidos (ErrorCode: PRD-002) o ya existe (ErrorCode: PRD-003)</response>
         [HttpPost]
         [ProducesResponseType(typeof(Product), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-        public IActionResult CreateProduct([FromBody] ProductCreateUpdateDto request)
+        public async Task<IActionResult> CreateProduct([FromBody] ProductCreateUpdateDto request)
         {
-            var createdProduct = _productService.CreateProduct(request);
+            var createdProduct = await _productService.CreateProductAsync(request);
             return CreatedAtAction(nameof(GetProduct), new { id = createdProduct.Id }, createdProduct);
         }
 
         /// <summary>
         /// Actualiza los datos de un producto existente.
         /// </summary>
-        /// <response code="200">Producto actualizado exitosamente</response>
-        /// <response code="404">Producto no encontrado (ErrorCode: PRD-001)</response>
-        /// <response code="422">Los datos del producto son inválidos (ErrorCode: PRD-002)</response>
         [HttpPut("{id}")]
         [ProducesResponseType(typeof(Product), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-     
-        public IActionResult UpdateProduct(Guid id, [FromBody] ProductCreateUpdateDto request)
+        public async Task<IActionResult> UpdateProduct(Guid id, [FromBody] ProductCreateUpdateDto request)
         {
-            return Ok(_productService.UpdateProduct(id, request));
+            var updatedProduct = await _productService.UpdateProductAsync(id, request);
+            return Ok(updatedProduct);
         }
 
         /// <summary>
         /// Elimina un producto del catálogo.
         /// </summary>
-        /// <response code="204">Producto eliminado correctamente</response>
-        /// <response code="404">Producto no encontrado (ErrorCode: PRD-001)</response>
-        /// <response code="422">El producto tiene órdenes activas y no puede eliminarse (ErrorCode: PRD-004)</response>
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-        public IActionResult DeleteProduct(Guid id)
+        public async Task<IActionResult> DeleteProduct(Guid id)
         {
-            _productService.DeleteProduct(id);
+            await _productService.DeleteProductAsync(id);
             return NoContent();
         }
     }
