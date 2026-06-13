@@ -1,4 +1,4 @@
-﻿- E-Commerce Microservicios - Trabajo Práctico CAI
+﻿- E-Commerce Microservicios - 
 
 Este proyecto es una plataforma de E-Commerce desarrollada bajo una arquitectura de microservicios utilizando .NET Core 8. El sistema está compuesto por 5 APIs REST independientes que se comunican entre sí para gestionar el ciclo de vida completo de las ventas.
 
