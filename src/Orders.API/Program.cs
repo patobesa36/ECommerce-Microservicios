@@ -59,7 +59,7 @@ builder.Services.AddHttpClient<Orders.API.Services.IUsersApiClient, Orders.API.S
 {
     client.BaseAddress = new Uri("https://localhost:7003/"); // Puerto de Users.API
 });
-});
+
 
 // ---------------------------------------------------------
 // PERSISTENCIA: REPOSITORIO E INICIALIZADOR SQLITE 
