@@ -26,7 +26,7 @@
             _cartRepository = cartRepository;
         }
 
-        public async Task<Cart_> AddItemAsync(Guid userId, CartItem request)
+        public async Task<ShoppingCart> AddItemAsync(Guid userId, CartItem request)
         {
             if (request.Cantidad <= 0)
                 throw new BusinessRuleException("CRT-004", "Cantidad inválida. Debe ser mayor a 0.");
@@ -41,7 +41,7 @@
             var cart = await _cartRepository.GetByUserIdAsync(userId);
             if (cart == null)
             {
-                cart = new Cart_ { UsuarioId = userId, Items = new List<CartItem>() };
+                cart = new ShoppingCart { UsuarioId = userId, Items = new List<CartItem>() };
             }
 
             var existingItem = cart.Items.FirstOrDefault(i => i.ProductoId == request.ProductoId);
@@ -64,7 +64,7 @@
             return cart;
         }
 
-        public async Task<Cart_> GetCartAsync(Guid userId)
+        public async Task<ShoppingCart> GetCartAsync(Guid userId)
         {
             var cart = await _cartRepository.GetByUserIdAsync(userId);
 
@@ -75,7 +75,7 @@
             return cart;
         }
 
-        public async Task<Cart_> UpdateItemQuantityAsync(Guid userId, Guid productoId, int cantidad)
+        public async Task<ShoppingCart> UpdateItemQuantityAsync(Guid userId, Guid productoId, int cantidad)
         {
             if (cantidad <= 0)
                 throw new BusinessRuleException("CRT-004", "Cantidad inválida. Debe ser mayor a 0.");
@@ -101,7 +101,7 @@
             return cart;
         }
 
-        public async Task<Cart_> RemoveItemAsync(Guid userId, Guid productoId)
+        public async Task<ShoppingCart> RemoveItemAsync(Guid userId, Guid productoId)
         {
             var cart = await _cartRepository.GetByUserIdAsync(userId);
             if (cart == null)

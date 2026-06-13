@@ -24,7 +24,7 @@
         /// <param name="userId">El Id del usuario dueño del carrito.</param>
         /// <param name="request">Los datos del ítem a agregar.</param>
         [HttpPost("{userId}/items")]
-        [ProducesResponseType(typeof(Cart_), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ShoppingCart), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
         public async Task<IActionResult> AddItem(Guid userId, [FromBody] CartItem request)
@@ -40,7 +40,7 @@
         /// <response code="200">Devuelve el carrito del usuario.</response>
         /// <response code="404">El carrito no existe o no tiene elementos (ErrorCode: CRT-001).</response>
         [HttpGet("{userId}")]
-        [ProducesResponseType(typeof(Cart_), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ShoppingCart), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetCart(Guid userId)
         {
@@ -58,7 +58,7 @@
         /// <response code="404">Carrito o Producto no encontrado (ErrorCode: CRT-001 o CRT-002).</response>
         /// <response code="422">Cantidad inválida o stock insuficiente en catálogo (ErrorCode: CRT-004 o CRT-003).</response>
         [HttpPut("{userId}/items/{productoId}")]
-        [ProducesResponseType(typeof(Cart_), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ShoppingCart), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
         public async Task<IActionResult> UpdateItemQuantity(Guid userId, Guid productoId, [FromQuery] int cantidad)
@@ -75,7 +75,7 @@
         /// <response code="200">El ítem fue removido y se devuelve el carrito actualizado.</response>
         /// <response code="404">El producto o el carrito no se encontraron (ErrorCode: CRT-001 o CRT-002).</response>
         [HttpDelete("{userId}/items/{productoId}")]
-        [ProducesResponseType(typeof(Cart_), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ShoppingCart), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> RemoveItem(Guid userId, Guid productoId)
         {
