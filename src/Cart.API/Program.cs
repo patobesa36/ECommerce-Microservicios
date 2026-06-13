@@ -48,7 +48,10 @@ builder.Services.AddSwaggerGen(c =>
 // INYECCIÓN DE SERVICIOS Y HTTP CLIENT
 // ---------------------------------------------------------
 // Esto registra el servicio Y le inyecta automáticamente el HttpClient para hablar con Products
-builder.Services.AddHttpClient<Cart.API.Services.ICartService, Cart.API.Services.CartService>();
+builder.Services.AddHttpClient<ICartService, CartService>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7001/");
+});
 
 // ---------------------------------------------------------
 // PERSISTENCIA: REPOSITORIO E INICIALIZADOR SQLITE

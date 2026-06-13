@@ -103,4 +103,16 @@ public class OrderRepository : IOrderRepository
             "UPDATE Orders SET Estado = @Estado WHERE Id = @Id",
             new { Estado = nuevoEstado, Id = id.ToString() });
     }
+    public async Task<IEnumerable<Order>> GetAllAsync()
+    {
+        using var connection = new SqliteConnection(_connectionString);
+
+        var sql = @"
+        SELECT *
+        FROM Orders";
+
+        var orders = await connection.QueryAsync<Order>(sql);
+
+        return orders;
+    }
 }

@@ -16,8 +16,6 @@
         public UsersApiClient(HttpClient httpClient)
         {
             _httpClient = httpClient;
-            // IMPORTANTE: Asegurate de poner el puerto exacto en el que corre tu Users.API en tu compu
-            _httpClient.BaseAddress = new Uri("https://localhost:7003/");
         }
 
         public async Task<bool> UserExistsAsync(Guid userId)
