@@ -2,7 +2,7 @@
 
 Este proyecto es una plataforma de E-Commerce desarrollada bajo una arquitectura de microservicios utilizando .NET Core 8. El sistema está compuesto por 5 APIs REST independientes que se comunican entre sí para gestionar el ciclo de vida completo de las ventas.
 
-- Arquitectura y Microservicios
+ARQUITECTURA Y MICROSERVICIOS
 
 El sistema está dividido por dominios de negocio:
 
@@ -12,7 +12,7 @@ El sistema está dividido por dominios de negocio:
 4. Users.API: Gestión de identidad, registro y login con seguridad.
 5. Notifications.API: Servicio de alertas, integrado con Users.API.
 
-- Tecnologías y Patrones
+TECNOLOGIAS Y PATRONES
 
 * Framework: .NET 8.0.
 * Persistencia: SQLite + Dapper (Micro-ORM).
@@ -21,7 +21,7 @@ El sistema está dividido por dominios de negocio:
 * Manejo de Errores: IExceptionHandler global con formato Problem Details.
 * Observabilidad: Health Checks y Logs estructurados (Serilog).
 
-- Estructura del Repositorio
+ESTRUCTURA DEL REPOSITORIO
 
 ecommerce-microservicios/
 ├── docs/
@@ -35,15 +35,13 @@ ecommerce-microservicios/
 ├── .gitignore
 └── README.md
 
-- Cómo ejecutar el proyecto
+COMO EJECUTAR EL PROYECTO
 
-Requisitos Previos
-
+Requisitos Previos:
 * .NET 8 SDK.
 * Visual Studio 2022 o IDE compatible.
 
-- Pasos para la ejecución local
-
+Pasos para la ejecución local
 1. Clonar el repositorio: git clone https://github.com/tu-usuario/ecommerce-microservicios.git
 2. Abrir el archivo ECommerce.sln con Visual Studio.
 3. Clic derecho en la Solución > "Configurar proyectos de inicio...".
