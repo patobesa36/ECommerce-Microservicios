@@ -27,12 +27,13 @@
             _usersApiClient = usersApiClient;
 
             _productsHttpClient = productsHttpClient;
-            _productsHttpClient.BaseAddress = new Uri("https://localhost:7001/"); // Puerto de Products.API
-        }
+            }
 
         public async Task<IEnumerable<Order>> GetOrdersAsync(Guid userId)
         {
-            // Buscamos directo en SQLite
+            if (userId == Guid.Empty)
+                return await _orderRepository.GetAllAsync();
+
             return await _orderRepository.GetByUserIdAsync(userId);
         }
 

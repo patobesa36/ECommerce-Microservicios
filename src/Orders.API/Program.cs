@@ -48,9 +48,15 @@ builder.Services.AddSwaggerGen(c =>
 // INYECCIÓN DE SERVICIOS Y HTTP CLIENTS 
 // ---------------------------------------------------------
 // Registra el servicio de órdenes y le inyecta el HttpClient para Productos
-builder.Services.AddHttpClient<Orders.API.Services.IOrderServices, Orders.API.Services.OrderService>();
+builder.Services.AddHttpClient<IOrderServices, OrderService>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7001/");
+});
 // Registra el cliente para comunicarse con Users.API
-builder.Services.AddHttpClient<Orders.API.Services.IUsersApiClient, Orders.API.Services.UsersApiClient>();
+builder.Services.AddHttpClient<IUsersApiClient, UsersApiClient>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7003/");
+});
 
 // ---------------------------------------------------------
 // PERSISTENCIA: REPOSITORIO E INICIALIZADOR SQLITE 

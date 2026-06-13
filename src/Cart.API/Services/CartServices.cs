@@ -20,9 +20,6 @@
         public CartService(HttpClient productsHttpClient, ICartRepository cartRepository)
         {
             _productsHttpClient = productsHttpClient;
-            // Recordá mapear el puerto exacto de tu Products.API
-            _productsHttpClient.BaseAddress = new Uri("https://localhost:7001/");
-
             _cartRepository = cartRepository;
         }
 
