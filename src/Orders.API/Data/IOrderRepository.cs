@@ -10,4 +10,5 @@ public interface IOrderRepository
     Task<Order?> GetByIdAsync(Guid id);
     Task CreateAsync(Order order);
     Task UpdateStatusAsync(Guid id, string nuevoEstado);
+    Task<IEnumerable<Order>> GetAllAsync();
 }

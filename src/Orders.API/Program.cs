@@ -12,7 +12,7 @@ using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Configuración de Serilog
+// 1. ConfiguraciÃ³n de Serilog
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
@@ -35,7 +35,7 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-// 2. Controladores, Swagger e Inyección de Dependencias
+// 2. Controladores, Swagger e InyecciÃ³n de Dependencias
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -46,17 +46,19 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // ---------------------------------------------------------
-// INYECCIÓN DE SERVICIOS Y HTTP CLIENTS 
+// INYECCIÃ“N DE SERVICIOS Y HTTP CLIENTS 
 // ---------------------------------------------------------
+// Registra el servicio de Ã³rdenes y le inyecta el HttpClient para Productos
 builder.Services.AddHttpClient<Orders.API.Services.IOrderServices, Orders.API.Services.OrderService>(client =>
 {
     client.BaseAddress = new Uri("https://localhost:7001/"); // Puerto de Products.API
 });
 
-
+// Registra el cliente para comunicarse con Users.API
 builder.Services.AddHttpClient<Orders.API.Services.IUsersApiClient, Orders.API.Services.UsersApiClient>(client =>
 {
     client.BaseAddress = new Uri("https://localhost:7003/"); // Puerto de Users.API
+});
 });
 
 // ---------------------------------------------------------
