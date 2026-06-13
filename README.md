@@ -23,8 +23,6 @@ El sistema está dividido por dominios de negocio:
 
 - Estructura del Repositorio
 
-La solución respeta la estructura exigida por la cátedra:
-
 ecommerce-microservicios/
 ├── docs/
 ├── src/
@@ -39,7 +37,7 @@ ecommerce-microservicios/
 
 - Cómo ejecutar el proyecto
 
-- Requisitos Previos
+Requisitos Previos
 
 * .NET 8 SDK.
 * Visual Studio 2022 o IDE compatible.
