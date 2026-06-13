@@ -79,11 +79,24 @@ builder.Services.AddHealthChecksUI(setup =>
 
 var app = builder.Build();
 
+app.UseExceptionHandler();
+
+
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Cart API V1");
+});
+
 using (var scope = app.Services.CreateScope())
 {
     var initializer = scope.ServiceProvider.GetRequiredService<Cart.API.Data.DatabaseInitializer>();
     initializer.Initialize();
 }
+
+// 4. Agregar enrutamiento básico para los controladores
+app.UseRouting();
+app.UseAuthorization();
 
 // Mapeo general
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
