@@ -1,6 +1,6 @@
 ﻿namespace Cart.API.Models
 {
-    public class Cart_
+    public class ShoppingCart
     {
         public Guid UsuarioId { get; set; } 
         public List<CartItem> Items { get; set; } = new(); 

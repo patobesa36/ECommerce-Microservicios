@@ -3,14 +3,18 @@
     using Microsoft.AspNetCore.Mvc;
     using Orders.API.Models;
     using Orders.API.Services;
+    using Orders.API.DTOs; // Agregado para que reconozca UpdateOrderStatusDto
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
 
     [ApiController]
     [Route("api/[controller]")]
     public class OrdersController : ControllerBase
     {
-        private readonly IOrderService _orderService;
+        private readonly IOrderServices _orderService;
 
-        public OrdersController(IOrderService orderService)
+        public OrdersController(IOrderServices orderService)
         {
             _orderService = orderService;
         }
@@ -22,9 +26,11 @@
         /// <returns>Una lista de órdenes.</returns>
         [HttpGet]
         [ProducesResponseType(typeof(List<Order>), StatusCodes.Status200OK)]
-        public IActionResult GetOrders([FromQuery] Guid? usuarioId)
+        public async Task<IActionResult> GetOrders([FromQuery] Guid? usuarioId)
         {
-            return Ok(_orderService.GetOrders(usuarioId));
+            // Usamos await y llamamos al método Async definido en la interfaz
+            var orders = await _orderService.GetOrdersAsync(usuarioId ?? Guid.Empty);
+            return Ok(orders);
         }
 
         /// <summary>
@@ -37,9 +43,11 @@
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(Order), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public IActionResult GetOrder(Guid id)
+        public async Task<IActionResult> GetOrder(Guid id)
         {
-            return Ok(_orderService.GetOrder(id));
+            // Usamos await y llamamos al método Async definido en la interfaz
+            var order = await _orderService.GetOrderAsync(id);
+            return Ok(order);
         }
 
         /// <summary>
@@ -59,6 +67,7 @@
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> CreateOrder([FromBody] Order request)
         {
+            // Este método ya lo tenías bien
             var order = await _orderService.CreateOrderAsync(request);
             return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
         }
@@ -76,9 +85,10 @@
         [ProducesResponseType(typeof(Order), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-        public IActionResult UpdateOrderStatus(Guid id, [FromBody] Order statusUpdate)
+        public async Task<IActionResult> UpdateOrderStatus(Guid id, [FromBody] UpdateOrderStatusDto statusUpdate)
         {
-            var order = _orderService.UpdateOrderStatus(id, statusUpdate);
+            // Usamos await y llamamos al método Async pasando el DTO correcto
+            var order = await _orderService.UpdateOrderStatusAsync(id, statusUpdate);
             return Ok(order);
         }
     }

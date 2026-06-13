@@ -56,7 +56,7 @@ builder.Services.AddScoped<DatabaseInitializer>();
 // Comunicación HTTP con Users.API
 builder.Services.AddHttpClient<IUsersApiClient, UsersApiClient>(client =>
 {
-    var baseUrl = builder.Configuration["UsersApi:BaseUrl"] ?? "https://localhost:7001";
+    var baseUrl = builder.Configuration["UsersApi:BaseUrl"] ?? "https://localhost:7003";
     client.BaseAddress = new Uri(baseUrl);
 });
 

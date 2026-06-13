@@ -8,9 +8,9 @@ namespace Cart.API.Services
 
     public interface ICartService
     {
-        Task<Cart_> AddItemAsync(Guid userId, CartItem request);
-        Task<Cart_> GetCartAsync(Guid userId);
-        Task<Cart_> UpdateItemQuantityAsync(Guid userId, Guid productoId, int cantidad);
-        Task<Cart_> RemoveItemAsync(Guid userId, Guid productoId);
+        Task<ShoppingCart> AddItemAsync(Guid userId, CartItem request);
+        Task<ShoppingCart> GetCartAsync(Guid userId);
+        Task<ShoppingCart> UpdateItemQuantityAsync(Guid userId, Guid productoId, int cantidad);
+        Task<ShoppingCart> RemoveItemAsync(Guid userId, Guid productoId);
     }
 }

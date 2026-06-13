@@ -16,12 +16,12 @@ public class CartRepository : ICartRepository
         _connectionString = configuration.GetConnectionString("DefaultConnection")!;
     }
 
-    public async Task<Cart_> GetByUserIdAsync(Guid userId)
+    public async Task<ShoppingCart> GetByUserIdAsync(Guid userId)
     {
         using var connection = new SqliteConnection(_connectionString);
 
         // Buscamos la "caja" del carrito
-        var cart = await connection.QuerySingleOrDefaultAsync<Cart_>(
+        var cart = await connection.QuerySingleOrDefaultAsync<ShoppingCart>(
             "SELECT * FROM Carts WHERE UsuarioId = @UserId", new { UserId = userId.ToString() });
 
         if (cart != null)
@@ -35,7 +35,7 @@ public class CartRepository : ICartRepository
         return cart!;
     }
 
-    public async Task UpsertCartAsync(Cart_ cart)
+    public async Task UpsertCartAsync(ShoppingCart cart)
     {
         using var connection = new SqliteConnection(_connectionString);
         connection.Open();

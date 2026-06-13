@@ -5,6 +5,6 @@ using System.Threading.Tasks;
 
 public interface ICartRepository
 {
-    Task<Cart_> GetByUserIdAsync(Guid userId);
-    Task UpsertCartAsync(Cart_ cart);
+    Task<ShoppingCart> GetByUserIdAsync(Guid userId);
+    Task UpsertCartAsync(ShoppingCart cart);
 }
